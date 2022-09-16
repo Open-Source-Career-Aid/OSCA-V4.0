@@ -13,9 +13,20 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from IPython.display import clear_output
 
-def getpage(url):
-    page = requests.get(url)
-    return BeautifulSoup(page.text, 'html.parser')
+def getpage(url, dynamic=False, timetofetch=3):
+    if not dynamic:
+        page = requests.get(url)
+        return BeautifulSoup(page.text, 'html.parser')
+    else:
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        driver = webdriver.Chrome('chromedriver', options=chrome_options)
+        driver.get(url)
+        time.sleep(timetofetch)
+        page = driver.page_source
+        soup = BeautifulSoup(page, 'html.parser')
+        driver.close()
+        return soup
 
 class stack:
     def __init__(self):
@@ -72,13 +83,14 @@ def articlescraper(url, domainname, database, headings, paragraphs, registereddo
     totalparagraphs = 0
     insideheading = stack()
     try:
-        soup = getpage(url)
+        soup = getpage(url, dynamic=dynamic, timetofetch=timetofetch)
         if registereddomains[domainname]['articlecontainer']['attrs']==None:
             main = soup.find(registereddomains[domainname]['articlecontainer']['tag'])
         else:
             main = soup.find(registereddomains[domainname]['articlecontainer']['tag'], registereddomains[domainname]['articlecontainer']['attrs'])
         descendants = main.descendants
-    except:
+    except Exception as e:
+        print(e)
         return None
     for element in descendants:
         try:
@@ -164,5 +176,8 @@ def articlescraper(url, domainname, database, headings, paragraphs, registereddo
             print(url)
             print(element, e)
             break
-    database.loc[docid] = [topicid, url, totalsubheadings, totalparagraphs]
+    try:
+        database.loc[docid] = [topicid, url, totalsubheadings, totalparagraphs]
+    except:
+        pass
     return database, headings, paragraphs, descendants
