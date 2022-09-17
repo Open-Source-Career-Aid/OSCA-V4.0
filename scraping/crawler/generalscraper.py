@@ -110,6 +110,26 @@ def articlescraper(url, dynamic=False, timetofetch=3):
                     continue
                 else:
                     continue
+            
+            # multiple h1 in a row and at the beginning
+            if lastheadingid==0:
+                if str(element.name)=='h1':
+                    if headingcheck(element):
+                        continue
+                    topic = True
+                    lastheadingid = topicid
+                    lastheadingnumber = 0
+                    lasttext = element.text
+                    if len(cleanbackslashnandt(element.text))==0:
+                        continue
+                    newheadings = []
+                    newheadings.append(['topic', cleanbackslashnandt(element.text), None, None, []])
+                    continue
+                elif str(element.name)=='ul' or str(element.name)=='ol':
+                    continue
+                else:
+                    pass
+
 
             if element.text==lasttext:
                 continue
