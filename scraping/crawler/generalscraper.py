@@ -166,12 +166,12 @@ def articlescraper(url, databaseid, dynamic=False, timetofetch=3):
 
                 if lastheadingnumber==0:
                     insideheading.push([lastheadingnumber, lastheadingid])
-                    newheadings[lastheadingid][2] = headingid
+                    newheadings[lastheadingid][3] = headingid
                 elif headingnumber>lastheadingnumber:
                     insideheading.push([lastheadingnumber, lastheadingid])
-                    newheadings[lastheadingid][2] = headingid
-                elif headingnumber==lastheadingnumber:
                     newheadings[lastheadingid][3] = headingid
+                elif headingnumber==lastheadingnumber:
+                    newheadings[lastheadingid][4] = headingid
                 else:
                     while True:
                         try:
@@ -179,11 +179,11 @@ def articlescraper(url, databaseid, dynamic=False, timetofetch=3):
                             if poppedheading[0]>headingnumber:
                                 continue
                             elif poppedheading[0]==headingnumber:
-                                newheadings[poppedheading[1]][3] = headingid
+                                newheadings[poppedheading[1]][4] = headingid
                                 break
                             else:
                                 insideheading = stack()
-                                newheadings[topicid][3] = headingid
+                                newheadings[topicid][4] = headingid
                                 break
                         except:
                             insideheading = stack()
@@ -194,7 +194,7 @@ def articlescraper(url, databaseid, dynamic=False, timetofetch=3):
                 if paracheck(element):
                     continue
                 newparagraphs.append([databaseid, 'p', cleanbackslashnandt(element.text), getanchors(url, element)])
-                newheadings[lastheadingid][4].append(paragraphid)
+                newheadings[lastheadingid][5].append(paragraphid)
                 lasttext = element.text
                 paragraphid += 1
             elif element.name=='ol':
@@ -202,7 +202,7 @@ def articlescraper(url, databaseid, dynamic=False, timetofetch=3):
                     if paracheck(li):
                         continue
                     newparagraphs.append([databaseid, 'oli', cleanbackslashnandt(li.text), getanchors(url, li)])
-                    newheadings[lastheadingid][4].append(paragraphid)
+                    newheadings[lastheadingid][5].append(paragraphid)
                     lasttext = li.text
                     paragraphid += 1
             elif element.name=='ul':
@@ -210,7 +210,7 @@ def articlescraper(url, databaseid, dynamic=False, timetofetch=3):
                     if paracheck(li):
                         continue
                     newparagraphs.append([databaseid, 'uli', cleanbackslashnandt(li.text), getanchors(url, li)])
-                    newheadings[lastheadingid][4].append(paragraphid)
+                    newheadings[lastheadingid][5].append(paragraphid)
                     lasttext = li.text
                     paragraphid += 1
         except Exception as e:
@@ -242,7 +242,8 @@ def getanchors(url, element):
     anchors = element.find_all('a')
     listtoreturn = []
     for anchor in anchors:
-        listtoreturn.append([urlcheck(anchor['href'], host), cleanbackslashnandt(anchor.text)])
+        if validate_url[0]:
+            listtoreturn.append([urlcheck(anchor['href'], host), cleanbackslashnandt(anchor.text)])
     return listtoreturn
 
 def urlcheck(url, host):
@@ -258,144 +259,12 @@ def urlcheck(url, host):
     else:
         return None
 
-    # def articlescraper(url, dynamic=False, timetofetch=3):
-    # headingdict = {'h1':1, 'h2':2, 'h3':3, 'h4':4, 'h5':5, 'h6':6}
-    # clear_output(wait=True)
-    # topic = False
-    # lastheadingid = 0
-    # lastheadingnumber = 0
-    # # lastparagraphid = 0
-    # # totalsubheadings = 0
-    # # totalparagraphs = 0
-    # topicid = 0
-    # paragraphid = 0
-    # lasttext = ''
-    # insideheading = stack()
-
-    # newdocument = []
-    # newheadings = []
-    # newparagraphs = []
-
-    # try:
-    #     soup = getpage(url, dynamic=dynamic, timetofetch=timetofetch)
-    #     # if registereddomains[domainname]['articlecontainer']['attrs']==None:
-    #     #     main = soup.find(registereddomains[domainname]['articlecontainer']['tag'])
-    #     # else:
-    #     #     main = soup.find(registereddomains[domainname]['articlecontainer']['tag'], registereddomains[domainname]['articlecontainer']['attrs'])
-    #     # descendants = main.descendants
-    # except Exception as e:
-    #     print(e)
-    #     return None
-
-    # for element in soup.descendants:
-    #     try:
-    #         if topic==False:
-    #             if str(element.name)[0]=='h':
-    #                 # docid = len(database.index)
-    #                 # topicid = len(headings.index)
-    #                 # headings.loc[topicid] = ['topic', element.text, None, None, []]
-    #                 topic = True
-    #                 lastheadingid = topicid
-    #                 lastheadingnumber = 0
-    #                 lasttext = element.text
-
-    #                 newheadings.append(['topic', element.text, None, None, []])
-
-    #                 continue
-    #             else:
-    #                 continue
-            
-    #         # so that the nested elements don't make the same text count twice
-    #         if element.text==lasttext:
-    #             continue
-
-    #         if element.name in headingdict:
-    #             # totalsubheadings+=1
-
-    #             headingid = lastheadingid+1
-
-    #             headingnumber = headingdict[str(element.name)]
-    #             # headings.loc[headingid] = [element.name, element.text, None, None, []]
-    #             lasttext = element.text
-
-    #             newheadings.append([element.name, element.text, None, None, []])
-
-    #             if lastheadingnumber==0:
-    #                 insideheading.push([lastheadingnumber, lastheadingid])
-    #                 # headings.iloc[lastheadingid]['subheading'] = headingid
-    #                 newheadings[lastheadingid][2] = headingid
-    #             elif headingnumber>lastheadingnumber:
-    #                 insideheading.push([lastheadingnumber, lastheadingid])
-    #                 # headings.iloc[lastheadingid]['subheading'] = headingid
-    #                 newheadings[lastheadingid][2] = headingid
-    #             elif headingnumber==lastheadingnumber:
-    #                 # headings.iloc[lastheadingid]['nextheading'] = headingid
-    #                 newheadings[lastheadingid][3] = headingid
-    #             else:
-    #                 while True:
-
-    #                     try:
-    #                         poppedheading = insideheading.pop()
-    #                         if poppedheading[0]>headingnumber:
-    #                             continue
-    #                         elif poppedheading[0]==headingnumber:
-    #                             # headings.iloc[poppedheading[1]]['nextheading'] = headingid
-    #                             newheadings[poppedheading[1]][3] = headingid
-    #                             break
-    #                         else:
-    #                             insideheading = stack()
-    #                             # headings.iloc[topicid]['subheading'] = headingid
-    #                             newheadings[topicid][3] = headingid
-    #                             break
-    #                     except:
-    #                         insideheading = stack()
-    #                         break
-    #             lastheadingid = headingid
-    #             lastheadingnumber = headingnumber
-    #         elif element.name=='p':
-    #             if len(element.text)==0:
-    #                 continue
-    #             # totalparagraphs+=1
-    #             # paragraphid = len(paragraphs.index)
-    #             # paragraphs.loc[paragraphid] = ['p', element.text]
-    #             newparagraphs.append(['p', element.text])
-    #             # headings.iloc[lastheadingid]['paragraphs'].append(paragraphid)
-    #             newheadings[lastheadingid][4].append(paragraphid)
-    #             # lastparagraphid = paragraphid
-    #             lasttext = element.text
-    #             paragraphid += 1
-    #         elif element.name=='ol':
-    #             # totalparagraphs+=1
-    #             for li in element.find_all('li'):
-    #                 if len(li.text)==0:
-    #                     continue
-    #                 # paragraphid = len(paragraphs.index)
-    #                 # paragraphs.loc[paragraphid] = ['oli', li.text]
-    #                 newparagraphs.append(['oli', li.text])
-    #                 # headings.iloc[lastheadingid]['paragraphs'].append(paragraphid)
-    #                 newheadings[lastheadingid][4].append(paragraphid)
-    #                 lasttext = element.text
-    #                 paragraphid += 1
-    #         elif element.name=='ul':
-    #             # totalparagraphs+=1
-    #             for li in element.find_all('li'):
-    #                 if len(li.text)==0:
-    #                     continue
-    #                 # paragraphid = len(paragraphs.index)
-    #                 # paragraphs.loc[paragraphid] = ['uli', li.text]
-    #                 newparagraphs.append(['uli', li.text])
-    #                 # headings.iloc[lastheadingid]['paragraphs'].append(paragraphid)
-    #                 newheadings[lastheadingid][4].append(paragraphid)
-    #                 lasttext = element.text
-    #                 paragraphid += 1
-    #     except Exception as e:
-    #         # print(url)
-    #         # print(element, e)
-    #         # break
-    #         continue
-    # try:
-    #     # database.loc[docid] = [topicid, url, totalsubheadings, totalparagraphs]
-    #     newdocument = [topicid, url, len(newheadings), len(newparagraphs)]
-    # except:
-    #     pass
-    # return newdocument, newheadings, newparagraphs
+def adddocument(headings, paragraphs):
+    totalpragraphs = len(paragraphs)
+    totalheadings = len(headings)
+    if totalpragraphs==0:
+        return False
+    elif totalheadings==0:
+        return False
+    else:
+        return True
