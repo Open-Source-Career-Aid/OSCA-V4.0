@@ -1,5 +1,7 @@
+from bdb import checkfuncname
 from curses import newpad
 from re import L
+from tabnanny import check
 from tkinter import NW
 from webbrowser import get
 import pandas as pd
@@ -15,6 +17,9 @@ import time
 # from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from IPython.display import clear_output
+# https://github.com/tasos-py/Search-Engines-Scraper
+from search_engines import Google
+from courlan import *
 
 def getpage(url, dynamic=False, timetofetch=3):
     if not dynamic:
@@ -71,7 +76,11 @@ def getgooglelinks(keyword, dynamic=False, timetofetch=3):
     clear_output(wait=True)
     return set(links)
 
-def articlescraper(url, dynamic=False, timetofetch=3):
+def articlescraper(url, databaseid, dynamic=False, timetofetch=3):
+
+    host = get_host_and_path(url)[0]
+    url = urlcheck(url, host)
+
     headingdict = {'h1':1, 'h2':2, 'h3':3, 'h4':4, 'h5':5, 'h6':6}
     clear_output(wait=True)
     topic = False
@@ -94,6 +103,10 @@ def articlescraper(url, dynamic=False, timetofetch=3):
 
     for element in soup.body.descendants:
         try:
+
+            if element.name == 'footer':
+                break
+
             if topic==False:
                 if str(element.name)=='h1':
                     if headingcheck(element):
@@ -105,7 +118,7 @@ def articlescraper(url, dynamic=False, timetofetch=3):
 
                     if len(cleanbackslashnandt(element.text))==0:
                         continue
-                    newheadings.append(['topic', cleanbackslashnandt(element.text), None, None, []])
+                    newheadings.append([databaseid, 'topic', cleanbackslashnandt(element.text), None, None, []])
 
                     continue
                 else:
@@ -123,7 +136,7 @@ def articlescraper(url, dynamic=False, timetofetch=3):
                     if len(cleanbackslashnandt(element.text))==0:
                         continue
                     newheadings = []
-                    newheadings.append(['topic', cleanbackslashnandt(element.text), None, None, []])
+                    newheadings.append([databaseid, 'topic', cleanbackslashnandt(element.text), None, None, []])
                     continue
                 elif str(element.name)=='ul' or str(element.name)=='ol':
                     continue
@@ -149,7 +162,7 @@ def articlescraper(url, dynamic=False, timetofetch=3):
 
                 if len(cleanbackslashnandt(element.text))==0:
                     continue
-                newheadings.append([element.name, cleanbackslashnandt(element.text), None, None, []])
+                newheadings.append([databaseid, element.name, cleanbackslashnandt(element.text), None, None, []])
 
                 if lastheadingnumber==0:
                     insideheading.push([lastheadingnumber, lastheadingid])
@@ -178,27 +191,27 @@ def articlescraper(url, dynamic=False, timetofetch=3):
                 lastheadingid = headingid
                 lastheadingnumber = headingnumber
             elif element.name=='p':
-                if len(cleanbackslashnandt(element.text))==0:
+                if paracheck(element):
                     continue
-                newparagraphs.append(['p', cleanbackslashnandt(element.text)])
+                newparagraphs.append([databaseid, 'p', cleanbackslashnandt(element.text), getanchors(url, element)])
                 newheadings[lastheadingid][4].append(paragraphid)
                 lasttext = element.text
                 paragraphid += 1
             elif element.name=='ol':
                 for li in element.find_all('li'):
-                    if len(cleanbackslashnandt(element.text))==0:
+                    if paracheck(li):
                         continue
-                    newparagraphs.append(['oli', cleanbackslashnandt(li.text)])
+                    newparagraphs.append([databaseid, 'oli', cleanbackslashnandt(li.text), getanchors(url, li)])
                     newheadings[lastheadingid][4].append(paragraphid)
-                    lasttext = element.text
+                    lasttext = li.text
                     paragraphid += 1
             elif element.name=='ul':
                 for li in element.find_all('li'):
-                    if len(cleanbackslashnandt(element.text))==0:
+                    if paracheck(li):
                         continue
-                    newparagraphs.append(['uli', cleanbackslashnandt(li.text)])
+                    newparagraphs.append([databaseid, 'uli', cleanbackslashnandt(li.text), getanchors(url, li)])
                     newheadings[lastheadingid][4].append(paragraphid)
-                    lasttext = element.text
+                    lasttext = li.text
                     paragraphid += 1
         except Exception as e:
             continue
@@ -211,6 +224,11 @@ def articlescraper(url, dynamic=False, timetofetch=3):
 def headingcheck(headingelement):
     return False
 
+def paracheck(paragraphelement):
+    if len(cleanbackslashnandt(paragraphelement.text))<2:
+        return True
+    return False
+
 def cleanbackslashnandt(somestring):
     somestring = ''.join([somestring[i] for i in range(len(somestring)) if somestring[i:i+1]!='\n'])
     somestring = ''.join([somestring[i] for i in range(len(somestring)) if somestring[i:i+1]!='\t'])
@@ -218,6 +236,27 @@ def cleanbackslashnandt(somestring):
 
 def cleanspaces(somestring):
     return ' '.join([element.strip() for element in somestring.split(' ') if len(element)!=0])
+
+def getanchors(url, element):
+    host = get_host_and_path(url)[0]
+    anchors = element.find_all('a')
+    listtoreturn = []
+    for anchor in anchors:
+        listtoreturn.append([urlcheck(anchor['href'], host), cleanbackslashnandt(anchor.text)])
+    return listtoreturn
+
+def urlcheck(url, host):
+    url = normalize_url(url)
+    if not is_not_crawlable(url):
+        if not is_navigation_page(url):
+            if validate_url(url)[0]:
+                return url
+            else:
+                return urlcheck(fix_relative_urls(host, url), host)
+        else:
+            return None
+    else:
+        return None
 
     # def articlescraper(url, dynamic=False, timetofetch=3):
     # headingdict = {'h1':1, 'h2':2, 'h3':3, 'h4':4, 'h5':5, 'h6':6}
