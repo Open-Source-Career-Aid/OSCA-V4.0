@@ -1,4 +1,5 @@
 from bdb import checkfuncname
+from concurrent.futures.process import _threads_wakeups
 from curses import newpad
 from re import L
 from tabnanny import check
@@ -219,13 +220,20 @@ def articlescraper(url, databaseid, dynamic=False, timetofetch=3):
         newdocument = [topicid, url, len(newheadings), len(newparagraphs)]
     except:
         pass
+
+    newdocument, newheadings, newparagraphs = postprocessscrapeddata(newdocument, newheadings, newparagraphs)
+
     return newdocument, newheadings, newparagraphs
 
 def headingcheck(headingelement):
+    if not isEnglish(headingelement.text):
+        return True
     return False
 
 def paracheck(paragraphelement):
     if len(cleanbackslashnandt(paragraphelement.text))<2:
+        return True
+    if not isEnglish(paragraphelement.text):
         return True
     return False
 
@@ -268,3 +276,36 @@ def adddocument(headings, paragraphs):
         return False
     else:
         return True
+
+def isEnglish(s):
+    try:
+        s.encode(encoding='utf-8').decode('ascii')
+    except UnicodeDecodeError:
+        return False
+    else:
+        return True
+
+def postprocessscrapeddata(document, headings, paragraphs):
+    
+    # do stuff here
+    tempheadings = []
+    # tempparagraphs = []
+    for i in range(len(headings)):
+        if len(headings[i][5])==0:
+            tempheadings.append(i)
+    # for i in range(len(paragraphs)):
+    #     if len(paragraphs[i][2])==0:
+    #         tempparagraphs.appemd(i)
+    
+    # for headings
+    j = 0
+    headingstoremove = set()
+    while j<len(tempheadings)-2:
+        if tempheadings[j]+1==tempheadings[j+1]:
+            if tempheadings[j+1]+1==tempheadings[j+2]:
+                headingstoremove.add(j)
+                headingstoremove.add(j+1)
+                headingstoremove.add(j+2)
+        j+=1
+    headings = [headings[i] for i in range(len(headings)) if i not in headingstoremove]
+    return document, headings, paragraphs
